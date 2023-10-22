@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Find RSS Feed</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="center-align">Find RSS Feed of a Website</h1>
+    <div class="row">
+      <div class="input-field col s12">
+        <input id="websiteInput" type="text" class="validate" placeholder="Enter website URL">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col s12">
+        <button id="findButton" class="btn waves-effect waves-light" type="button">Find RSS Feed</button>
+      </div>
+    </div>
+    <div class="row">
+      <div id="result" class="col s12"></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('findButton').addEventListener('click', function () {
+      const website = document.getElementById('websiteInput').value;
+      if (website) {
+        if (website.startsWith('https://')) {
+          findRSSFeed(website);
+        } else {
+          document.getElementById('result').textContent = 'Please enter a valid website URL starting with "https://".';
+        }
+      } else {
+        document.getElementById('result').textContent = 'Please enter a website URL.';
+      }
+    });
+
+    function findRSSFeed(website) {
+      document.getElementById('result').textContent = 'Finding RSS feed for ' + website + '...';
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', website, true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          const rssLinkRegex = /<link[^>]+rel=["']alternate["'][^>]+type=["']application\/rss\+xml["'][^>]+href=["']([^"']+)["'][^>]*>/g;
+
+          const rssFeeds = [];
+          let match;
+
+          while ((match = rssLinkRegex.exec(xhr.responseText)) !== null) {
+            rssFeeds.push(match[1]);
+          }
+
+          const resultDiv = document.getElementById('result');
+
+          if (rssFeeds.length > 0) {
+            resultDiv.innerHTML = 'RSS Feeds found for ' + website + ':<ul>';
+            rssFeeds.forEach((feed) => {
+              resultDiv.innerHTML += `<li><a href="${feed}" target="_blank">${feed}</a> <button class="copy-button" data-feed="${feed}">Copy</button></li>`;
+            });
+            resultDiv.innerHTML += '</ul>';
+
+            // Add click event to copy buttons
+            const copyButtons = document.querySelectorAll('.copy-button');
+            copyButtons.forEach((button) => {
+              button.addEventListener('click', function () {
+                const feedURL = this.getAttribute('data-feed');
+                copyToClipboard(feedURL);
+                this.textContent = 'Copied!';
+                this.disabled = true;
+              });
+            });
+          } else {
+            resultDiv.textContent = 'No RSS Feeds found on ' + website + '.';
+          }
+        }
+      };
+      xhr.send();
+    }
+
+    function copyToClipboard(text) {
+      const dummyTextArea = document.createElement('textarea');
+      dummyTextArea.value = text;
+      document.body.appendChild(dummyTextArea);
+      dummyTextArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(dummyTextArea);
+    }
+  </script>
+</body>
+</html>
